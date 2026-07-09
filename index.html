@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Laboratório Virtual - Calor Radial em Poço</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef2f6;
+      --card: #ffffff;
+      --card-soft: #f7fafc;
+      --ink: #14201f;
+      --muted: #63716f;
+      --line: #d7e0e2;
+      --accent: #11786f;
+      --accent-strong: #0b4f49;
+      --hot: #d4492e;
+      --cold: #265d91;
+      --shadow: 0 14px 32px rgba(21, 32, 31, 0.11);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+      overscroll-behavior: none;
+    }
+
+    body {
+      touch-action: manipulation;
+    }
+
+    .app {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 10px;
+      padding: 10px 2px 14px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 8px;
+      background: var(--accent-strong);
+      color: #ffffff;
+      font-weight: 900;
+      font-size: 0.95rem;
+    }
+
+    h1,
+    h2,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(1.2rem, 5vw, 1.72rem);
+      line-height: 1.12;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .formula {
+      overflow-x: auto;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--accent-strong);
+      font-size: 0.78rem;
+      font-weight: 800;
+      white-space: nowrap;
+      box-shadow: 0 8px 22px rgba(21, 32, 31, 0.06);
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 14px 0;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .live-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(17, 120, 111, 0.12);
+      flex: 0 0 auto;
+    }
+
+    .controls {
+      display: grid;
+      gap: 13px;
+      padding: 14px;
+    }
+
+    .control {
+      display: grid;
+      gap: 10px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card-soft);
+    }
+
+    .control-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    label {
+      color: var(--ink);
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    output {
+      min-width: 78px;
+      padding: 7px 9px;
+      border-radius: 8px;
+      background: #e9f3f1;
+      color: var(--accent-strong);
+      text-align: right;
+      font-size: 0.86rem;
+      font-variant-numeric: tabular-nums;
+      font-weight: 900;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 42px;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .range-limits {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .play-button {
+      width: 100%;
+      min-height: 58px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent-strong);
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .play-button.is-running {
+      background: var(--hot);
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 0 14px 14px;
+    }
+
+    .status-box {
+      min-height: 74px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbfc;
+    }
+
+    .status-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    .status-box strong {
+      display: block;
+      margin-top: 7px;
+      color: var(--ink);
+      font-size: 1.05rem;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    .canvas-card {
+      padding-bottom: 14px;
+    }
+
+    .canvas-shell {
+      position: relative;
+      width: min(100%, 430px);
+      aspect-ratio: 1 / 1;
+      margin: 14px auto 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      overflow: hidden;
+      background: #f8fbfc;
+      box-shadow: inset 0 0 0 10px rgba(255, 255, 255, 0.64);
+    }
+
+    #thermalCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+
+    .heat-scale {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px 0;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 850;
+    }
+
+    .heat-track {
+      height: 11px;
+      border: 1px solid rgba(20, 32, 31, 0.11);
+      border-radius: 6px;
+      background: linear-gradient(90deg, #152b58, #2870ad, #19a7a2, #f0c44f, #ed7b3a, #b81725);
+    }
+
+    #plot {
+      width: 100%;
+      height: 355px;
+    }
+
+    @media (min-width: 760px) {
+      .app {
+        padding: 22px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr auto;
+        align-items: end;
+      }
+
+      .formula {
+        max-width: 460px;
+      }
+
+      .visual-grid {
+        display: grid;
+        grid-template-columns: minmax(300px, 0.9fr) minmax(390px, 1.1fr);
+        gap: 14px;
+      }
+
+      #plot {
+        height: 430px;
+      }
+    }
+
+    @media (min-width: 980px) {
+      .stack {
+        grid-template-columns: 360px minmax(0, 1fr);
+        align-items: start;
+      }
+
+      .controls-card {
+        position: sticky;
+        top: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <div class="brand-row">
+        <div class="brand-mark">UFPA</div>
+        <div>
+          <h1>Laboratório virtual de calor radial</h1>
+          <p class="subtitle">Propagação transiente ao redor de um poço de petróleo</p>
+        </div>
+      </div>
+      <div class="formula">∂T/∂t = α(∂²T/∂r² + (1/r)∂T/∂r)</div>
+    </header>
+
+    <section class="stack">
+      <article class="card controls-card" aria-label="Controles da simulação">
+        <div class="card-header">
+          <h2 class="card-title">Controles</h2>
+          <span class="live-dot" aria-hidden="true"></span>
+        </div>
+
+        <div class="controls">
+          <div class="control">
+            <div class="control-top">
+              <label for="twSlider">Temperatura do fluido, Tw</label>
+              <output id="twValue" for="twSlider">90 °C</output>
+            </div>
+            <input id="twSlider" type="range" min="50" max="150" step="1" value="90" />
+            <div class="range-limits"><span>50 °C</span><span>150 °C</span></div>
+          </div>
+
+          <div class="control">
+            <div class="control-top">
+              <label for="tfSlider">Temperatura inicial da rocha, Tf</label>
+              <output id="tfValue" for="tfSlider">40 °C</output>
+            </div>
+            <input id="tfSlider" type="range" min="10" max="80" step="1" value="40" />
+            <div class="range-limits"><span>10 °C</span><span>80 °C</span></div>
+          </div>
+
+          <button class="play-button" id="playButton" type="button">Play</button>
+        </div>
+
+        <div class="status-grid" aria-label="Indicadores da simulação">
+          <div class="status-box">
+            <span>Tempo simulado</span>
+            <strong id="timeDisplay">0,00 d</strong>
+          </div>
+          <div class="status-box">
+            <span>Frente térmica</span>
+            <strong id="frontDisplay">0,10 m</strong>
+          </div>
+          <div class="status-box">
+            <span>dt estável</span>
+            <strong id="dtDisplay">--</strong>
+          </div>
+          <div class="status-box">
+            <span>Nós radiais</span>
+            <strong>50</strong>
+          </div>
+        </div>
+      </article>
+
+      <div class="visual-grid">
+        <article class="card canvas-card" aria-label="Minifilme térmico do corte transversal">
+          <div class="card-header">
+            <h2 class="card-title">Minifilme térmico</h2>
+            <span class="live-dot" aria-hidden="true"></span>
+          </div>
+          <div class="canvas-shell">
+            <canvas id="thermalCanvas" width="720" height="720"></canvas>
+          </div>
+          <div class="heat-scale" aria-hidden="true">
+            <span>Azul frio</span>
+            <span class="heat-track"></span>
+            <span>Vermelho quente</span>
+          </div>
+        </article>
+
+        <article class="card" aria-label="Gráfico de linha temperatura versus raio">
+          <div class="card-header">
+            <h2 class="card-title">Perfil T(r,t)</h2>
+            <span class="live-dot" aria-hidden="true"></span>
+          </div>
+          <div id="plot"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    // Parametros fisicos fixos do laboratorio virtual.
+    const R_W = 0.1; // raio do poco [m]
+    const R_E = 4.0; // raio externo da formacao simulada [m]
+    const ALPHA = 1e-6; // difusividade termica efetiva da rocha [m2/s]
+    const NODES = 50; // numero de nos radiais
+    const SECONDS_PER_DAY = 86400;
+    const MAX_SIM_DAYS = 5;
+    const STEPS_PER_FRAME = 2;
+    const FRAME_INTERVAL_MS = 50;
+
+    const dr = (R_E - R_W) / (NODES - 1);
+    const radii = Array.from({ length: NODES }, (_, i) => R_W + i * dr);
+
+    // Criterio de estabilidade de Von Neumann/Fourier para o FTCS radial.
+    //
+    // A discretizacao explicita fica:
+    // T_i^(n+1) = T_i^n + Fo[(T_{i+1}-2T_i+T_{i-1})
+    //              + dr/(2r_i)(T_{i+1}-T_{i-1})]
+    //
+    // Congelando localmente 1/r_i, o fator de amplificacao e:
+    // G = 1 - 4Fo sin²(theta/2) + j Fo (dr/r_i) sin(theta).
+    // Para |G| <= 1 em todos os modos, usa-se:
+    // Fo <= min(1/2, 2 / max_i[(dr/r_i)^2]).
+    const lambdaMax = Math.max(...radii.slice(1, -1).map((radius) => dr / radius));
+    const fourierCritical = Math.min(0.5, 2 / (lambdaMax * lambdaMax));
+    const fourierNumber = 0.88 * fourierCritical;
+    const dt = fourierNumber * dr * dr / ALPHA;
+
+    const elements = {
+      twSlider: document.getElementById("twSlider"),
+      tfSlider: document.getElementById("tfSlider"),
+      twValue: document.getElementById("twValue"),
+      tfValue: document.getElementById("tfValue"),
+      playButton: document.getElementById("playButton"),
+      timeDisplay: document.getElementById("timeDisplay"),
+      frontDisplay: document.getElementById("frontDisplay"),
+      dtDisplay: document.getElementById("dtDisplay"),
+      canvas: document.getElementById("thermalCanvas"),
+      plot: document.getElementById("plot")
+    };
+
+    const context = elements.canvas.getContext("2d");
+
+    let temperature = [];
+    let simulatedSeconds = 0;
+    let running = false;
+    let frameId = null;
+    let lastVisualTimestamp = 0;
+    let plotReady = false;
+
+    function celsius(value) {
+      return `${Math.round(value).toLocaleString("pt-BR")} °C`;
+    }
+
+    function decimal(value, digits = 2) {
+      return value.toLocaleString("pt-BR", {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function getBoundaryTemperatures() {
+      return {
+        tw: Number(elements.twSlider.value),
+        tf: Number(elements.tfSlider.value)
+      };
+    }
+
+    function applyBoundaryConditions(profile, tw, tf) {
+      profile[0] = tw;
+      profile[NODES - 1] = tf;
+    }
+
+    function resetSimulation() {
+      const { tw, tf } = getBoundaryTemperatures();
+      temperature = Array(NODES).fill(tf);
+      applyBoundaryConditions(temperature, tw, tf);
+      simulatedSeconds = 0;
+      updateLabels();
+      renderAll(true);
+    }
+
+    function advanceOneStep(dtStep = dt) {
+      const { tw, tf } = getBoundaryTemperatures();
+      const nextTemperature = temperature.slice();
+      const localFourierNumber = ALPHA * dtStep / (dr * dr);
+
+      // FTCS radial:
+      // d2T/dr2 ~= (T[i+1] - 2T[i] + T[i-1]) / dr2
+      // dT/dr   ~= (T[i+1] - T[i-1]) / (2dr)
+      // O termo (1/r)dT/dr representa a geometria cilindrica do escoamento
+      // de calor. Perto do poco, esse termo tem mais peso porque r e menor.
+      for (let i = 1; i < NODES - 1; i++) {
+        const secondDerivative = temperature[i + 1] - 2 * temperature[i] + temperature[i - 1];
+        const radialDerivative = (dr / (2 * radii[i])) * (temperature[i + 1] - temperature[i - 1]);
+        nextTemperature[i] = temperature[i] + localFourierNumber * (secondDerivative + radialDerivative);
+      }
+
+      applyBoundaryConditions(nextTemperature, tw, tf);
+      temperature = nextTemperature;
+      simulatedSeconds += dtStep;
+    }
+
+    function advanceSimulation() {
+      const maxSeconds = MAX_SIM_DAYS * SECONDS_PER_DAY;
+
+      for (let step = 0; step < STEPS_PER_FRAME; step++) {
+        if (simulatedSeconds >= maxSeconds) {
+          simulatedSeconds = maxSeconds;
+          pauseSimulation();
+          break;
+        }
+
+        const remainingSeconds = maxSeconds - simulatedSeconds;
+        advanceOneStep(Math.min(dt, remainingSeconds));
+      }
+
+      if (simulatedSeconds >= maxSeconds) {
+        simulatedSeconds = maxSeconds;
+        pauseSimulation();
+      }
+    }
+
+    function temperatureToColor(value, coldValue, hotValue) {
+      const span = Math.max(1e-9, hotValue - coldValue);
+      const t = Math.min(1, Math.max(0, (value - coldValue) / span));
+      const stops = [
+        { p: 0.00, c: [21, 43, 88] },
+        { p: 0.26, c: [40, 112, 173] },
+        { p: 0.50, c: [25, 167, 162] },
+        { p: 0.70, c: [240, 196, 79] },
+        { p: 0.86, c: [237, 123, 58] },
+        { p: 1.00, c: [184, 23, 37] }
+      ];
+
+      for (let i = 0; i < stops.length - 1; i++) {
+        const a = stops[i];
+        const b = stops[i + 1];
+        if (t >= a.p && t <= b.p) {
+          const local = (t - a.p) / (b.p - a.p);
+          const r = Math.round(a.c[0] + (b.c[0] - a.c[0]) * local);
+          const g = Math.round(a.c[1] + (b.c[1] - a.c[1]) * local);
+          const bl = Math.round(a.c[2] + (b.c[2] - a.c[2]) * local);
+          return `rgb(${r}, ${g}, ${bl})`;
+        }
+      }
+
+      return "rgb(184, 23, 37)";
+    }
+
+    function resizeCanvas() {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = elements.canvas.getBoundingClientRect();
+      const width = Math.max(1, Math.round(rect.width * pixelRatio));
+      const height = Math.max(1, Math.round(rect.height * pixelRatio));
+
+      if (elements.canvas.width !== width || elements.canvas.height !== height) {
+        elements.canvas.width = width;
+        elements.canvas.height = height;
+      }
+    }
+
+    function renderCanvas() {
+      resizeCanvas();
+
+      const width = elements.canvas.width;
+      const height = elements.canvas.height;
+      const center = { x: width / 2, y: height / 2 };
+      const outerRadius = Math.min(width, height) * 0.475;
+      const wellRadius = outerRadius * 0.14;
+      const coldValue = Math.min(...temperature);
+      const hotValue = Math.max(...temperature);
+
+      context.clearRect(0, 0, width, height);
+      context.fillStyle = "#f8fbfc";
+      context.fillRect(0, 0, width, height);
+
+      // O corte transversal e desenhado de fora para dentro. Cada anel usa
+      // exatamente a temperatura de um no radial do vetor FTCS, mantendo o
+      // canvas sincronizado com o grafico de linha.
+      for (let i = NODES - 1; i >= 0; i--) {
+        const physicalFraction = (radii[i] - R_W) / (R_E - R_W);
+        const screenRadius = wellRadius + Math.sqrt(physicalFraction) * (outerRadius - wellRadius);
+
+        context.beginPath();
+        context.arc(center.x, center.y, screenRadius, 0, Math.PI * 2);
+        context.fillStyle = temperatureToColor(temperature[i], coldValue, hotValue);
+        context.fill();
+      }
+
+      context.save();
+      context.strokeStyle = "rgba(255, 255, 255, 0.40)";
+      context.lineWidth = Math.max(1, width * 0.002);
+      for (let guide = 1; guide <= 5; guide++) {
+        const fraction = guide / 5;
+        const guideRadius = wellRadius + Math.sqrt(fraction) * (outerRadius - wellRadius);
+        context.beginPath();
+        context.arc(center.x, center.y, guideRadius, 0, Math.PI * 2);
+        context.stroke();
+      }
+      context.restore();
+
+      context.beginPath();
+      context.arc(center.x, center.y, wellRadius, 0, Math.PI * 2);
+      context.fillStyle = temperatureToColor(temperature[0], coldValue, hotValue);
+      context.fill();
+      context.lineWidth = Math.max(5, width * 0.012);
+      context.strokeStyle = "rgba(20, 32, 31, 0.62)";
+      context.stroke();
+
+      context.save();
+      context.fillStyle = "rgba(255, 255, 255, 0.88)";
+      context.font = `900 ${Math.max(12, width * 0.028)}px Inter, Segoe UI, sans-serif`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText("poço", center.x, center.y);
+      context.restore();
+    }
+
+    function thermalFrontRadius() {
+      const { tf } = getBoundaryTemperatures();
+      let front = R_W;
+
+      for (let i = 0; i < NODES; i++) {
+        if (Math.abs(temperature[i] - tf) >= 0.5) {
+          front = radii[i];
+        }
+      }
+
+      return front;
+    }
+
+    function renderPlot(fullLayout = false) {
+      const { tw, tf } = getBoundaryTemperatures();
+      const yMin = Math.min(tw, tf) - 5;
+      const yMax = Math.max(tw, tf) + 5;
+
+      const trace = {
+        x: radii,
+        y: temperature,
+        type: "scatter",
+        mode: "lines",
+        line: {
+          color: "#11786f",
+          width: 4,
+          shape: "spline"
+        },
+        hovertemplate: "r = %{x:.2f} m<br>T = %{y:.1f} °C<extra></extra>"
+      };
+
+      const layout = {
+        margin: { t: 22, r: 16, b: 52, l: 58 },
+        paper_bgcolor: "#ffffff",
+        plot_bgcolor: "#f8fbfc",
+        font: {
+          family: "Inter, Segoe UI, sans-serif",
+          color: "#14201f"
+        },
+        xaxis: {
+          title: "Raio r (m)",
+          range: [R_W, R_E],
+          gridcolor: "#dfe8ea",
+          zeroline: false,
+          fixedrange: true
+        },
+        yaxis: {
+          title: "Temperatura T (°C)",
+          range: [yMin, yMax],
+          gridcolor: "#dfe8ea",
+          zeroline: false,
+          fixedrange: true
+        },
+        shapes: [
+          {
+            type: "line",
+            x0: R_W,
+            x1: R_W,
+            y0: yMin,
+            y1: yMax,
+            line: { color: "#d4492e", width: 2, dash: "dot" }
+          },
+          {
+            type: "line",
+            x0: R_E,
+            x1: R_E,
+            y0: yMin,
+            y1: yMax,
+            line: { color: "#265d91", width: 2, dash: "dot" }
+          }
+        ],
+        annotations: [
+          {
+            x: R_W,
+            y: tw,
+            text: "Tw",
+            showarrow: false,
+            xanchor: "left",
+            yanchor: "bottom",
+            font: { color: "#d4492e", size: 12 }
+          },
+          {
+            x: R_E,
+            y: tf,
+            text: "Tf",
+            showarrow: false,
+            xanchor: "right",
+            yanchor: "top",
+            font: { color: "#265d91", size: 12 }
+          }
+        ],
+        showlegend: false
+      };
+
+      const config = {
+        responsive: true,
+        displayModeBar: false
+      };
+
+      if (!plotReady || fullLayout) {
+        Plotly.react(elements.plot, [trace], layout, config);
+        plotReady = true;
+      } else {
+        Plotly.update(elements.plot, { x: [radii], y: [temperature] }, {}, [0]);
+      }
+    }
+
+    function updateLabels() {
+      const { tw, tf } = getBoundaryTemperatures();
+      elements.twValue.textContent = celsius(tw);
+      elements.tfValue.textContent = celsius(tf);
+      elements.timeDisplay.textContent = `${decimal(simulatedSeconds / SECONDS_PER_DAY, 2)} d`;
+      elements.frontDisplay.textContent = `${decimal(thermalFrontRadius(), 2)} m`;
+      elements.dtDisplay.textContent = `${decimal(dt, 0)} s`;
+    }
+
+    function renderAll(fullLayout = false) {
+      updateLabels();
+      renderCanvas();
+      renderPlot(fullLayout);
+    }
+
+    function pauseSimulation() {
+      running = false;
+      lastVisualTimestamp = 0;
+      elements.playButton.textContent = "Play";
+      elements.playButton.classList.remove("is-running");
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+    }
+
+    function playSimulation() {
+      if (simulatedSeconds >= MAX_SIM_DAYS * SECONDS_PER_DAY) {
+        resetSimulation();
+      }
+
+      running = true;
+      lastVisualTimestamp = 0;
+      elements.playButton.textContent = "Pause";
+      elements.playButton.classList.add("is-running");
+      frameId = requestAnimationFrame(animationLoop);
+    }
+
+    function animationLoop(timestamp) {
+      if (!running) return;
+
+      if (lastVisualTimestamp === 0) {
+        lastVisualTimestamp = timestamp;
+      }
+
+      if (timestamp - lastVisualTimestamp >= FRAME_INTERVAL_MS) {
+        advanceSimulation();
+        renderAll(false);
+        lastVisualTimestamp = timestamp;
+      }
+
+      if (running) {
+        frameId = requestAnimationFrame(animationLoop);
+      } else {
+        frameId = null;
+      }
+    }
+
+    elements.playButton.addEventListener("click", () => {
+      if (running) {
+        pauseSimulation();
+      } else {
+        playSimulation();
+      }
+    });
+
+    [elements.twSlider, elements.tfSlider].forEach((slider) => {
+      slider.addEventListener("input", () => {
+        const wasRunning = running;
+        pauseSimulation();
+        resetSimulation();
+        if (wasRunning) playSimulation();
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      renderAll(true);
+      Plotly.Plots.resize(elements.plot);
+    });
+
+    resetSimulation();
+  </script>
+</body>
+</html>
